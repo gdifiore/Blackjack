@@ -4,8 +4,10 @@ function [blackjackBool] = isBlackjack(hand, debug)
     first = hand(1);
     second = hand(2);
 
+    DeckValues = [11 2:10 10 10 10 11 2:10 10 10 10 11 2:10 10 10 10 11 2:10 10 10 10];
+
     % matlab doesn't let you write multiline if statements so instead there's this 246 column behemoth
-    if (((first == 1 || first == 14 || first == 27 || first == 40) && (second == 10 || second == 23 || second == 36 || second == 49)) || ((second == 1 || second == 14 || second == 27 || second == 40) && (first == 10 || first == 23 || first == 36 || first == 49)))
+    if (((DeckValues(first) == 11) && (DeckValues(second) == 10)) || ((DeckValues(first) == 10) && (DeckValues(second) == 11)))
         blackjackBool = true;
         if debug
             fprintf('[DEBUG] blackjack\n')

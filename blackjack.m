@@ -8,7 +8,7 @@ clear
 close all
 
 % create a debug flag to print out extra information if I'm trying to debug something
-debug = false;
+debug = true;
 
 %% Define game variables
 
@@ -78,6 +78,7 @@ while is_playing
     %% Dealer Hand
     % use first second 2 cards in deck
     dealer_hand = ShuffledDeck(3:4);
+    dealer_blackjack = isBlackjack(dealer_hand, debug);
     for i=1:length(dealer_hand)
         debugPrintParam('Card number is: ', dealer_hand(i), debug)
         if (dealer_hand(i) <= 13)
@@ -92,13 +93,23 @@ while is_playing
             debugPrint('error recognizing card', debug)
         end
         debugPrintParam('Card value: ', DeckValues(dealer_hand(i)), debug)
-        dealer_total = dealer_total + DeckValues(dealer_hand(i));
-        dealer_score_sprites = findSprites(player_total);
+        if dealer_blackjack
+            dealer_score_sprites = findSprites(dealer_total);
+            dealer_total = dealer_total + DeckValues(dealer_hand(i));
+        else   
+            if (((dealer_total + DeckValues(dealer_hand(i))) > 21) && DeckValues(dealer_hand(i)) == 11)
+                dealer_total = dealer_total + DeckValues(dealer_hand(i)) - 10;
+            else
+                dealer_total = dealer_total + DeckValues(dealer_hand(i));
+            end 
+        end
+
     end
 
     %% Player Hand
     % use first 2 cards in deck
     player_hand = ShuffledDeck(1:2);
+    player_blackjack = isBlackjack(player_hand, debug);
     for i=1:length(player_hand)
         debugPrintParam('Card number is: ', player_hand(i), debug)
         if (player_hand(i) <= 13)
@@ -113,8 +124,17 @@ while is_playing
             debugPrint('error', debug)
         end
         debugPrintParam('Card value: ', DeckValues(player_hand(i)), debug)
-        player_total = player_total + DeckValues(player_hand(i));
-        player_total = aceLogic(player_hand, player_total)
+
+        if player_blackjack
+            player_score_sprites = findSprites(player_total);
+            player_total = player_total + DeckValues(player_hand(i));
+        else   
+            if (((player_total + DeckValues(player_hand(i))) > 21) && DeckValues(player_hand(i)) == 11)
+                player_total = player_total + DeckValues(player_hand(i)) - 10;
+            else
+                player_total = player_total + DeckValues(player_hand(i));
+            end 
+        end
     end
 
     [score_sprite1, score_sprite2] = findSprites(player_total);
@@ -132,10 +152,9 @@ while is_playing
 
     % automatically skip player turn if he has blackjack, no point in letting them mis-press a key
     % also, you can only get blackjack when your cards are dealt, so only need to check it once
-    stand = isBlackjack(player_hand, debug);
-    player_blackjack = isBlackjack(player_hand, debug);
+    stand = player_blackjack;
 
-    while ~stand && ~(player_total > 21)
+    while (~stand && ~(player_total > 21))
         key = getKeyboardInput(my_scene);
         while (~isequal(key, 'space') && ~isequal(key, 's') &&  ~isequal(key, 'l'))
             key = getKeyboardInput(my_scene);
@@ -146,8 +165,11 @@ while is_playing
             debugPrint('hit', debug)
             new_card = ShuffledDeck(card_index);
             face_display(3, player_hit_index) = card_sprites(new_card);
-            player_total = player_total + DeckValues(new_card);
-            player_total = aceLogic(player_hand, player_total)
+            if (((player_total + DeckValues(new_card)) > 21) && DeckValues(new_card) == 11)
+                player_total = player_total + DeckValues(new_card) - 10;
+            else
+                player_total = player_total + DeckValues(new_card);
+            end
             player_hit_index = player_hit_index + 1;
             card_index = card_index + 1;
 
@@ -169,15 +191,16 @@ while is_playing
     %% Dealer playing loop
     % while the dealer total is < 17 and dealer doesn't have blackjack
 
-    % same thing with player_blackjack
-    dealer_blackjack = isBlackjack(player_hand, debug);
     while (dealer_total < 17 && ~dealer_blackjack) && player_total <= 21
         % dealer has to hit
         debugPrint('dealer hits', debug)
         new_card = ShuffledDeck(card_index);
         face_display(1, dealer_take_index) = card_sprites(new_card);
-        dealer_total = dealer_total + DeckValues(new_card);
-        dealer_total = aceLogic(dealer_hand, dealer_total)
+        if (((dealer_total + DeckValues(new_card)) > 21) && DeckValues(new_card) == 11)
+            dealer_total = dealer_total + DeckValues(new_card) - 10;
+        else
+            dealer_total = dealer_total + DeckValues(new_card);
+        end
         dealer_take_index = dealer_take_index + 1;
         card_index = card_index + 1;
 

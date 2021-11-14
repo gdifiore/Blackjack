@@ -1,12 +1,12 @@
-[ ] Impliment getting blackjack logic ---- It's broken?
+[✓] Impliment getting blackjack logic
 [✓] Hide dealer's first card
 [✓] Display player total during game
 [✓] Display dealer total after game
 [✓] Prompt user to play again
 [ ] Split logic
-[ ] Aces can be 1 or 11
+[✓] Aces can be 1 or 11
 [✓] Betting logic
 [✓] Debug print statements
 [✓] Fix who wins
 
-[ ] Input new bet value in game loop?
+[X] Input new bet value in game loop?
