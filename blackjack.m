@@ -7,6 +7,11 @@
 % I wish I knew matlab had classes before I made this
 %
 
+
+% add double down
+% add insurance if dealer faceup is an ace
+% add surrender
+
 clc
 clear
 close all
@@ -49,6 +54,8 @@ left_total = 0;
 right_total = 0;
 left_stand = false;
 right_stand = false;
+left_blackjack = false;
+right_blackjack = false;
 
 %% Initialize scene and font sprites
 my_scene = simpleGameEngine('retro_cards.png',16,16,8,[255,255,255]);
@@ -74,6 +81,7 @@ player_name = input('What is your name? ', 's');
 fprintf('Hello, %s welcome to blackjack.\n\n', player_name)
 fprintf('Controls:\n')
 fprintf('Press space to hit\n')
+fprintf('Press p to split (if able)\n')
 fprintf('Press s to stand\n')
 
 while is_playing
@@ -150,8 +158,8 @@ while is_playing
     % automatically skip player turn if he has blackjack, no point in letting them mis-press a key
     % also, you can only get blackjack when your cards are dealt, so only need to check it once
     stand = player_blackjack;
-    canSplit(player_hand)
-    while (~stand && ~(player_total > 21))
+
+    while ((~stand && ~(player_total > 21)) && ~left_stand && ~right_stand)
         % get player input for if they want to hit or stand
         key = getKeyboardInput(my_scene);
         while (~isequal(key, 'space') && ~isequal(key, 's') && ~isequal(key, 'p'))
@@ -202,8 +210,10 @@ while is_playing
             face_display(4,11) = number_sprites(sprite2);
         case 'p'
             % split logic
-            if canSplit(player_hand)
-                debugPrint('hello', debug)
+            player_total = 0;
+            if canSplit(player_hand) && ((money - (bet_amount * 2)) >= 0)
+                bet_amount = bet_amount * 2;
+                debugPrint('splitting', debug)
                 face_display = [empty_sprite card_back    card_sprites(dealer_hand(2)) empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
                     empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
                     empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
@@ -216,7 +226,7 @@ while is_playing
                 left_total = DeckValues(player_hand(1));
                 right_total = DeckValues(player_hand(2));
                 
-                while (~left_stand && ~right_stand)
+                while (~left_stand)
                     % take cards for left hand
                     key = getKeyboardInput(my_scene);
                     while (~isequal(key, 'space') && ~isequal(key, 's'))
@@ -240,11 +250,15 @@ while is_playing
                             debugPrint('player_total bigger than 21', debug)
                             % only need to check from 3rd card if one of the first 2 aces already had their value changed
                             for i=1:length(left_hand)
-                                if player_total > 21 && DeckValues(player_hand(i)) == 11
+                                if left_total > 21 && DeckValues(player_hand(i)) == 11
                                     debugPrint('starting from beginning, ace found', debug)
-                                    player_total = player_total - 10;
+                                    left_total = left_total - 10;
                                 end
                             end
+                        end
+
+                        if isBlackjack(left_hand, debug) || left_total > 21
+                            left_stand = true;
                         end
 
                         left_hit_index = left_hit_index - 1;
@@ -258,10 +272,10 @@ while is_playing
                         % player wants to stand on their left hand
                         debugPrint('stand left hand', debug)
                         left_stand = true;
-                        break;
                     end
-                    end
+                end
 
+                while ~right_stand
                     % take cards for right hand
                     key = getKeyboardInput(my_scene);
                     while (~isequal(key, 'space') && ~isequal(key, 's'))
@@ -292,6 +306,10 @@ while is_playing
                             end
                         end
 
+                        if isBlackjack(right_hand, debug) || right_total > 21
+                            right_stand = true;
+                        end
+
                         right_hit_index = right_hit_index + 1;
                         card_index = card_index + 1;
 
@@ -299,13 +317,14 @@ while is_playing
                         face_display(4,10) = number_sprites(sprite1);
                         face_display(4,11) = number_sprites(sprite2);
                         drawScene(my_scene,card_display,face_display)
+                        debugPrint('HIT RIGHT FINISHED', debug)
                     case 's'
-                        % player wants to stand on their left hand
+                        % player wants to stand on their right hand
                         debugPrint('stand right hand', debug)
                         right_stand = true;
-                        break;
                     end
                 end
+            end
         case 's'
             % player wants to stand
             stand = true;
@@ -360,18 +379,27 @@ while is_playing
     face_display(2,10) = number_sprites(sprite1);
     face_display(2,11) = number_sprites(sprite2);
 
-    if ((player_total == dealer_total) && ~player_blackjack && ~dealer_blackjack)
+    if (left_total > 0) 
+        debugPrintParam('Player left total: ', left_total, debug)
+        debugPrintParam('Player right total: ', right_total, debug)
+        debugPrintParam('Dealer total: ', dealer_total, debug)
+    else
+        debugPrintParam('Player total: ', player_total, debug)
+        debugPrintParam('Dealer total: ', dealer_total, debug)
+    end
+
+    if ((player_total == dealer_total) && ~(player_total > 21) && ~(dealer_total > 21) || (dealer_blackjack && player_blackjack))
         debugPrint('Push', debug)
-    elseif (((player_total <= 21) && (player_total > dealer_total)) || (player_blackjack && ~dealer_blackjack))
+    elseif (((player_total <= 21) && (player_total > dealer_total)) || (player_blackjack && ~dealer_blackjack) || left_blackjack || right_blackjack)
         debugPrint('Player wins', debug)
         player_won = true;
-    elseif (((dealer_total <= 21) && (dealer_total > player_total)) || (dealer_blackjack && ~player_blackjack))
+    elseif (((dealer_total <= 21) && (dealer_total > player_total)) || (dealer_blackjack && ~player_blackjack) || (left_total > 21 && right_total > 21))
         debugPrint('Dealer wins', debug)
         dealer_won = true;
-    elseif ((player_total > 21))
+    elseif ((player_total > 21) || (left_total > 21 && right_total > 21))
         debugPrint('Dealer wins', debug)
         dealer_won = true;
-    elseif (dealer_total > 21 && player_total <= 21)
+    elseif ((dealer_total > 21 && player_total <= 21) || (dealer_total > 21 && (left_total < 21 && right_total < 21)))
         debugPrint('Player wins', debug)
         player_won = true;
     else
@@ -381,7 +409,11 @@ while is_playing
     drawScene(my_scene,card_display,face_display)
 
     if player_won
-        money = money + bet_amount;
+        if player_blackjack
+            money = money + bet_amount + (bet_amount * 1.5);
+        else
+            money = money + (bet_amount * 2);
+        end
     elseif dealer_won
         money = money - bet_amount;
     end
@@ -412,6 +444,15 @@ while is_playing
 
         sub_ace_player = false;
         sub_ace_dealer = false;
+
+        left_hit_index = 4;
+        right_hit_index = 8;
+        left_total = 0;
+        right_total = 0;
+        left_stand = false;
+        right_stand = false;
+        left_blackjack = false;
+        right_blackjack = false;
     end
     
 end 
