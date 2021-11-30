@@ -7,11 +7,6 @@
 % I wish I knew matlab had classes before I made this
 %
 
-
-% add double down
-% add insurance if dealer faceup is an ace
-% add surrender
-
 clc
 clear
 close all
