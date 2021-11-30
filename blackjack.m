@@ -32,8 +32,6 @@ dealer_total = 0;
 player_blackjack = false;
 dealer_blackjack = false;
 
-hasNotSplit = true;
-
 % player/dealer_won booleans
 player_won = false;
 dealer_won = false;
@@ -42,6 +40,15 @@ dealer_won = false;
 % needed for if you hit, need to determine if the aces value was already subtracted
 sub_ace_dealer = false;
 sub_ace_player = false;
+
+% variables needed for splitting hand
+% location to add new card for left/right hand
+left_hit_index = 4;
+right_hit_index = 8;
+left_total = 0;
+right_total = 0;
+left_stand = false;
+right_stand = false;
 
 %% Initialize scene and font sprites
 my_scene = simpleGameEngine('retro_cards.png',16,16,8,[255,255,255]);
@@ -147,7 +154,7 @@ while is_playing
     while (~stand && ~(player_total > 21))
         % get player input for if they want to hit or stand
         key = getKeyboardInput(my_scene);
-        while (~isequal(key, 'space') && ~isequal(key, 's'))
+        while (~isequal(key, 'space') && ~isequal(key, 's') && ~isequal(key, 'p'))
             key = getKeyboardInput(my_scene);
         end
 
@@ -193,7 +200,112 @@ while is_playing
             [sprite1, sprite2] = findSprites(player_total);
             face_display(4,10) = number_sprites(sprite1);
             face_display(4,11) = number_sprites(sprite2);
+        case 'p'
+            % split logic
+            if canSplit(player_hand)
+                debugPrint('hello', debug)
+                face_display = [empty_sprite card_back    card_sprites(dealer_hand(2)) empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
+                    empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
+                    empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
+                    empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite number_sprites(score_sprite1) number_sprites(score_sprite2)
+                    empty_sprite empty_sprite empty_sprite empty_sprite card_sprites(player_hand(1)) empty_sprite card_sprites(player_hand(2)) empty_sprite empty_sprite empty_sprite empty_sprite];
+                 drawScene(my_scene,card_display,face_display)
 
+                left_hand = [player_hand(1)];
+                right_hand = [player_hand(2)];
+                left_total = DeckValues(player_hand(1));
+                right_total = DeckValues(player_hand(2));
+                
+                while (~left_stand && ~right_stand)
+                    % take cards for left hand
+                    key = getKeyboardInput(my_scene);
+                    while (~isequal(key, 'space') && ~isequal(key, 's'))
+                        key = getKeyboardInput(my_scene);
+                    end
+
+                    switch key
+                    case 'space'
+                        % player wants to hit
+                        debugPrint('hit left', debug)
+                        new_card = ShuffledDeck(card_index);
+                        debugPrintParam('Card number is: ', new_card, debug)
+                        debugPrintParam('Card value: ', DeckValues(new_card), debug)
+                        face_display(5, left_hit_index) = card_sprites(new_card);
+
+                        left_hand(end + 1) = new_card;
+
+                        left_total = left_total + DeckValues(new_card);
+
+                        if left_total > 21
+                            debugPrint('player_total bigger than 21', debug)
+                            % only need to check from 3rd card if one of the first 2 aces already had their value changed
+                            for i=1:length(left_hand)
+                                if player_total > 21 && DeckValues(player_hand(i)) == 11
+                                    debugPrint('starting from beginning, ace found', debug)
+                                    player_total = player_total - 10;
+                                end
+                            end
+                        end
+
+                        left_hit_index = left_hit_index - 1;
+                        card_index = card_index + 1;
+
+                        [sprite1, sprite2] = findSprites(left_total);
+                        face_display(4,1) = number_sprites(sprite1);
+                        face_display(4,2) = number_sprites(sprite2);
+                        drawScene(my_scene,card_display,face_display)
+                    case 's'
+                        % player wants to stand on their left hand
+                        debugPrint('stand left hand', debug)
+                        left_stand = true;
+                        break;
+                    end
+                    end
+
+                    % take cards for right hand
+                    key = getKeyboardInput(my_scene);
+                    while (~isequal(key, 'space') && ~isequal(key, 's'))
+                        key = getKeyboardInput(my_scene);
+                    end
+
+                    switch key
+                    case 'space'
+                        % player wants to hit
+                        debugPrint('hit right', debug)
+                        new_card = ShuffledDeck(card_index);
+                        debugPrintParam('Card number is: ', new_card, debug)
+                        debugPrintParam('Card value: ', DeckValues(new_card), debug)
+                        face_display(5, right_hit_index) = card_sprites(new_card);
+
+                        right_hand(end + 1) = new_card;
+
+                        right_total = right_total + DeckValues(new_card);
+
+                        if right_total > 21
+                            debugPrint('player_total bigger than 21', debug)
+                            % only need to check from 3rd card if one of the first 2 aces already had their value changed
+                            for i=1:length(right_hand)
+                                if right_total > 21 && DeckValues(player_hand(i)) == 11
+                                    debugPrint('starting from beginning, ace found', debug)
+                                    right_total = right_total - 10;
+                                end
+                            end
+                        end
+
+                        right_hit_index = right_hit_index + 1;
+                        card_index = card_index + 1;
+
+                        [sprite1, sprite2] = findSprites(right_total);
+                        face_display(4,10) = number_sprites(sprite1);
+                        face_display(4,11) = number_sprites(sprite2);
+                        drawScene(my_scene,card_display,face_display)
+                    case 's'
+                        % player wants to stand on their left hand
+                        debugPrint('stand right hand', debug)
+                        right_stand = true;
+                        break;
+                    end
+                end
         case 's'
             % player wants to stand
             stand = true;
