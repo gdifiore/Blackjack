@@ -17,7 +17,7 @@ clear
 close all
 
 % create a debug flag to print out extra information if I'm trying to debug something
-debug = true;
+debug = false;
 
 %% Define game variables
 
@@ -32,6 +32,9 @@ player_hit_index = 4;
 player_total = 0;
 dealer_take_index = 4;
 dealer_total = 0;
+
+doubled_down = false;
+insured = false;
 
 % player/dealer_blackjack booleans NOT the same as if they win
 player_blackjack = false;
@@ -83,6 +86,9 @@ fprintf('Controls:\n')
 fprintf('Press space to hit\n')
 fprintf('Press p to split (if able)\n')
 fprintf('Press s to stand\n')
+fprintf('Press u to surrender\n')
+fprintf('Press i to insure your hand\n')
+fprintf('Press d to double down on your bet\n')
 
 while is_playing
     % reset these variables for players who play again
@@ -116,7 +122,7 @@ while is_playing
     for i=1:length(dealer_hand)
         if dealer_total > 21 && DeckValues(dealer_hand(i)) == 11
            dealer_total = dealer_total - 10; 
-           sub_ace_dealer = true
+           sub_ace_dealer = true;
         end
     end
 
@@ -135,7 +141,7 @@ while is_playing
     for i=1:length(player_hand)
         if player_total > 21 && DeckValues(player_hand(i)) == 11
             player_total = player_total - 10; 
-            sub_ace_player = true
+            sub_ace_player = true;
         end
     end
 
@@ -162,7 +168,7 @@ while is_playing
     while ((~stand && ~(player_total > 21)) && ~left_stand && ~right_stand)
         % get player input for if they want to hit or stand
         key = getKeyboardInput(my_scene);
-        while (~isequal(key, 'space') && ~isequal(key, 's') && ~isequal(key, 'p'))
+        while (~isequal(key, 'space') && ~isequal(key, 's') && ~isequal(key, 'p') && ~isequal(key, 'i') && ~isequal(key, 'd') && ~isequal(key, 'u'))
             key = getKeyboardInput(my_scene);
         end
 
@@ -185,7 +191,6 @@ while is_playing
                 % only need to check from 3rd card if one of the first 2 aces already had their value changed
                 if sub_ace_player
                     for i=(player_hit_index - 1):length(player_hand)
-                        fprintf('here')
                         if player_total > 21 && DeckValues(player_hand(i)) == 11
                             debugPrint('new ace, subtracting', debug)
                             player_total = player_total - 10; 
@@ -208,6 +213,21 @@ while is_playing
             [sprite1, sprite2] = findSprites(player_total);
             face_display(4,10) = number_sprites(sprite1);
             face_display(4,11) = number_sprites(sprite2);
+        case 'i'
+            if DeckValues(dealer_hand(2)) == 11 && ~insured
+                debugPrint('Insured hand', debug)
+                bet_amount = bet_amount / 2;
+                insured = true;
+            end
+        case 'd'
+            if ~doubled_down
+                debugPrint('Doubled down', debug)
+                bet_amount = bet_amount * 2;
+                doubled_down = true;
+            end
+        case 'u'
+            % end players turn by setting stand to true
+            stand = true;
         case 'p'
             % split logic
             player_total = 0;
@@ -250,7 +270,7 @@ while is_playing
                             debugPrint('player_total bigger than 21', debug)
                             % only need to check from 3rd card if one of the first 2 aces already had their value changed
                             for i=1:length(left_hand)
-                                if left_total > 21 && DeckValues(player_hand(i)) == 11
+                                if left_total > 21 && DeckValues(left_hand(i)) == 11
                                     debugPrint('starting from beginning, ace found', debug)
                                     left_total = left_total - 10;
                                 end
@@ -299,7 +319,7 @@ while is_playing
                             debugPrint('player_total bigger than 21', debug)
                             % only need to check from 3rd card if one of the first 2 aces already had their value changed
                             for i=1:length(right_hand)
-                                if right_total > 21 && DeckValues(player_hand(i)) == 11
+                                if right_total > 21 && DeckValues(right_hand(i)) == 11
                                     debugPrint('starting from beginning, ace found', debug)
                                     right_total = right_total - 10;
                                 end
@@ -350,7 +370,6 @@ while is_playing
             % only need to check from 3rd card if one of the first 2 aces already had their value changed
             if sub_ace_dealer
                 for i=(dealer_take_index - 1):length(dealer_hand)
-                    fprintf('here')
                     if dealer_total > 21 && DeckValues(dealer_hand(i)) == 11
                         debugPrint('new ace, subtracting', debug)
                         dealer_total = dealer_total - 10; 
@@ -388,18 +407,31 @@ while is_playing
         debugPrintParam('Dealer total: ', dealer_total, debug)
     end
 
-    if ((player_total == dealer_total) && ~(player_total > 21) && ~(dealer_total > 21) || (dealer_blackjack && player_blackjack))
+    if (dealer_blackjack && ~player_blackjack)
+        fprintf('Dealer wins\n')
+        debugPrint('Dealer wins', debug)
+        dealer_won = true;
+    elseif (player_blackjack && ~dealer_blackjack)
+        fprintf('Player wins!\n')
+        debugPrint('Player wins', debug)
+        player_won = true;        
+    elseif ((player_total == dealer_total) && ~(player_total > 21) && ~(dealer_total > 21) || (dealer_blackjack && player_blackjack))
+        fprintf('Push - no winner\n')
         debugPrint('Push', debug)
     elseif (((player_total <= 21) && (player_total > dealer_total)) || (player_blackjack && ~dealer_blackjack) || left_blackjack || right_blackjack)
+        fprintf('Player wins!\n')
         debugPrint('Player wins', debug)
         player_won = true;
     elseif (((dealer_total <= 21) && (dealer_total > player_total)) || (dealer_blackjack && ~player_blackjack) || (left_total > 21 && right_total > 21))
+        fprintf('Dealer wins\n')
         debugPrint('Dealer wins', debug)
         dealer_won = true;
     elseif ((player_total > 21) || (left_total > 21 && right_total > 21))
+        fprintf('Dealer wins\n')
         debugPrint('Dealer wins', debug)
         dealer_won = true;
     elseif ((dealer_total > 21 && player_total <= 21) || (dealer_total > 21 && (left_total < 21 && right_total < 21)))
+        fprintf('Player wins!\n')
         debugPrint('Player wins', debug)
         player_won = true;
     else
