@@ -171,6 +171,7 @@ while is_playing
         switch key
         case 'space'
             % player wants to hit
+            fprintf('Taking a card\n')
             debugPrint('hit', debug)
             new_card = ShuffledDeck(card_index);
             debugPrintParam('Card number is: ', new_card, debug)
@@ -209,21 +210,25 @@ while is_playing
             face_display(4,10) = number_sprites(sprite1);
             face_display(4,11) = number_sprites(sprite2);
         case 'i'
-            if DeckValues(dealer_hand(2)) == 11 && ~insured
+            if DeckValues(dealer_hand(2)) == 11 && ~insured  && (length(player_hand) == 2)
+                fprintf('Insured hand\n')
                 debugPrint('Insured hand', debug)
                 bet_amount = bet_amount / 2;
                 insured = true;
             end
         case 'd'
-            if ~doubled_down
+            if ~doubled_down && ((money - (bet_amount * 2)) >= 0)
+                fprintf('Doubled down\n')
                 debugPrint('Doubled down', debug)
                 bet_amount = bet_amount * 2;
                 doubled_down = true;
             end
         case 'u'
             % end players turn by setting stand to true
+            fprintf('Surrendered\n')
             stand = true;
         case 'p'
+            fprintf('Splitting hand\n')
             % split logic
             player_total = 0;
             if canSplit(player_hand) && ((money - (bet_amount * 2)) >= 0)
@@ -240,8 +245,18 @@ while is_playing
                 right_hand = [player_hand(2)];
                 left_total = DeckValues(player_hand(1));
                 right_total = DeckValues(player_hand(2));
+
+                [sprite1, sprite2] = findSprites(right_total);
+                face_display(4,10) = number_sprites(sprite1);
+                face_display(4,11) = number_sprites(sprite2);
+                drawScene(my_scene,card_display,face_display)
+
+                [sprite1, sprite2] = findSprites(left_total);
+                face_display(4,1) = number_sprites(sprite1);
+                face_display(4,2) = number_sprites(sprite2);
+                drawScene(my_scene,card_display,face_display)
                 
-                while (~left_stand)
+                while ~left_stand
                     % take cards for left hand
                     key = getKeyboardInput(my_scene);
                     while (~isequal(key, 'space') && ~isequal(key, 's'))
@@ -250,6 +265,7 @@ while is_playing
 
                     switch key
                     case 'space'
+                        fprintf('Taking card for left hand\n')
                         % player wants to hit
                         debugPrint('hit left', debug)
                         new_card = ShuffledDeck(card_index);
@@ -292,6 +308,7 @@ while is_playing
 
                 while ~right_stand
                     % take cards for right hand
+                    fprintf('Taking card for right hand\n')
                     key = getKeyboardInput(my_scene);
                     while (~isequal(key, 'space') && ~isequal(key, 's'))
                         key = getKeyboardInput(my_scene);
@@ -342,6 +359,7 @@ while is_playing
             end
         case 's'
             % player wants to stand
+            fprintf('Standing\n')
             stand = true;
             debugPrint('stand', debug)
         end
@@ -406,7 +424,7 @@ while is_playing
         fprintf('Dealer wins\n')
         debugPrint('Dealer wins', debug)
         dealer_won = true;
-    elseif (player_blackjack && ~dealer_blackjack)
+    elseif ((player_blackjack && ~dealer_blackjack) || (left_blackjack && ~dealer_blackjack) || (right_blackjack && ~dealer_blackjack))
         fprintf('Player wins!\n')
         debugPrint('Player wins', debug)
         player_won = true;        

@@ -3,25 +3,12 @@
 [✓] Display player total during game
 [✓] Display dealer total after game
 [✓] Prompt user to play again
-[ ] Split logic
-[ ] If you take 5 cards you win
-[X] Doubling down?
+[✓] Split logic
+[X] If you take 5 cards you win
+[✓] Doubling down?
 [✓] Aces can be 1 or 11
 [✓] Betting logic
 [✓] Debug print statements
 [✓] Fix who wins
 
 [X] Input new bet value in game loop?
-
-Splitting logic
-    - must be able to split current hand
-    - money left must be >= bet (because double down)
-    - if those conditions are true,
-        - set a left and right hand (move card placement on board)
-        - take cards for left side
-            - print left score to left side
-        - take cards for right side
-            - print right score to right side
-        - set which hands won
-    - return which hands won (instead of calculating in main loop)
-    - REDO winner calculation in main loop
