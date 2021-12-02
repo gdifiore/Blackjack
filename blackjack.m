@@ -3,10 +3,6 @@
 % Gabriel DiFiore - 2021
 %
 
-%
-% I wish I knew matlab had classes before I made this
-%
-
 clc
 clear
 close all
@@ -76,6 +72,7 @@ DeckValues = [11 2:10 10 10 10 11 2:10 10 10 10 11 2:10 10 10 10 11 2:10 10 10 1
 
 player_name = input('What is your name? ', 's');
 
+% print controls
 fprintf('Hello, %s welcome to blackjack.\n\n', player_name)
 fprintf('Controls:\n')
 fprintf('Press space to hit\n')
@@ -85,11 +82,13 @@ fprintf('Press u to surrender\n')
 fprintf('Press i to insure your hand\n')
 fprintf('Press d to double down on your bet\n')
 
+% gameplay loop
 while is_playing
     % reset these variables for players who play again
     player_won = false;
     dealer_won = false;
 
+    % betting prompt
     fprintf('You have $%i dollars\n', money)
     bet_amount = input('How much do you want to bet? ');
     while bet_amount > money
@@ -133,6 +132,7 @@ while is_playing
         player_total = player_total + DeckValues(player_hand(i));
     end
 
+    % determine wheter to subtract 11
     for i=1:length(player_hand)
         if player_total > 21 && DeckValues(player_hand(i)) == 11
             player_total = player_total - 10; 
@@ -155,7 +155,6 @@ while is_playing
 
     %% Player playing loop
     % while the player still wants to take cards
-
     % automatically skip player turn if he has blackjack, no point in letting them mis-press a key
     % also, you can only get blackjack when your cards are dealt, so only need to check it once
     stand = player_blackjack;
@@ -234,7 +233,7 @@ while is_playing
             if canSplit(player_hand) && ((money - (bet_amount * 2)) >= 0)
                 bet_amount = bet_amount * 2;
                 debugPrint('splitting', debug)
-                face_display = [empty_sprite card_back    card_sprites(dealer_hand(2)) empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
+                face_display = [empty_sprite card_back card_sprites(dealer_hand(2)) empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
                     empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
                     empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite
                     empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite empty_sprite number_sprites(score_sprite1) number_sprites(score_sprite2)
@@ -246,6 +245,7 @@ while is_playing
                 left_total = DeckValues(player_hand(1));
                 right_total = DeckValues(player_hand(2));
 
+                % set up left and right hand scores
                 [sprite1, sprite2] = findSprites(right_total);
                 face_display(4,10) = number_sprites(sprite1);
                 face_display(4,11) = number_sprites(sprite2);
@@ -295,6 +295,7 @@ while is_playing
                         left_hit_index = left_hit_index - 1;
                         card_index = card_index + 1;
 
+                        % update left score
                         [sprite1, sprite2] = findSprites(left_total);
                         face_display(4,1) = number_sprites(sprite1);
                         face_display(4,2) = number_sprites(sprite2);
@@ -345,6 +346,7 @@ while is_playing
                         right_hit_index = right_hit_index + 1;
                         card_index = card_index + 1;
 
+                        % update right score
                         [sprite1, sprite2] = findSprites(right_total);
                         face_display(4,10) = number_sprites(sprite1);
                         face_display(4,11) = number_sprites(sprite2);
@@ -420,6 +422,7 @@ while is_playing
         debugPrintParam('Dealer total: ', dealer_total, debug)
     end
 
+    % winning logic, ugly but it works
     if (dealer_blackjack && ~player_blackjack)
         fprintf('Dealer wins\n')
         debugPrint('Dealer wins', debug)
@@ -447,12 +450,12 @@ while is_playing
         fprintf('Player wins!\n')
         debugPrint('Player wins', debug)
         player_won = true;
-    else
-        debugPrint('wtf', debug)
     end
 
+    % print final scene
     drawScene(my_scene,card_display,face_display)
 
+    % give player winnings
     if player_won
         if player_blackjack
             money = money + bet_amount + (bet_amount * 1.5);

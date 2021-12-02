@@ -1,6 +1,7 @@
 function [sprite1, sprite2] = findSprites(total)
 %findSprites Function to return corresponding sprites to display score total
-%   Detailed explanation goes here
+%   Basically it determines which sprites to read from the sprite sheet automatically
+%   instead of doing this every time we want to update it we can put it into a function
     if total >= 30
         sprite1 = 4;
         sprite2 = total - 29;
